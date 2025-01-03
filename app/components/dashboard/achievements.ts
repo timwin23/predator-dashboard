@@ -27,7 +27,7 @@ export interface Goal extends Achievement {
 export interface AchievementsData {
   library: Achievement[];
   goalsAndAchievements: Goal[];
-  activeGoal?: Goal;
+  activeGoals: Goal[];
   completedAchievements: Goal[];
 }
 
@@ -78,7 +78,7 @@ export async function fetchAchievements(): Promise<AchievementsData | null> {
     return {
       library: achievementLibrary,
       goalsAndAchievements,
-      activeGoal: goalsAndAchievements.find((g: Goal) => g.status === 'active'),
+      activeGoals: goalsAndAchievements.filter((g: Goal) => g.status === 'active'),
       completedAchievements: goalsAndAchievements.filter((g: Goal) => g.status === 'completed')
     };
 

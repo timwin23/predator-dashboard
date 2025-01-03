@@ -3,10 +3,11 @@
 import React, { useState, useEffect } from 'react';
 import { LineChart, Line, XAxis, YAxis, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Target, Swords, Crown, Flame, Star, Trophy, PhoneCall, Calendar, Users, DollarSign } from 'lucide-react';
-import { fetchSheetData, filterDataByDateRange, fetchProjections } from './sheets';
+import { fetchSheetData, filterDataByDateRange, fetchProjections, fetchPersonalData } from './sheets';
 import { fetchMarketingData, fetchMarketingProjections } from '../../lib/marketingSheets';
 import TargetBarChart from './TargetBarChart';
 import MarketingDashboard from './MarketingDashboard';
+import PersonalDashboard from './PersonalDashboard';
 
 type MetricCardProps = {
   title: string;
@@ -64,11 +65,29 @@ const getRateColor = (title: string, rate: number): string => {
   }
 };
 
+function MetricCard({ title, value, rate, rateValue, xp, icon: Icon }: MetricCardProps) {
+  return (
+    <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4">
+      <div className="flex justify-between items-start mb-2">
+        <span className="text-gray-300">{title}</span>
+        {Icon && <Icon className="text-red-500" />}
+      </div>
+      <div className="text-2xl font-bold mb-1 text-white">{value}</div>
+      <div className="text-sm text-gray-300">{rate}</div>
+      <div className={`text-lg font-bold ${getRateColor(title, parseFloat(String(rateValue)))}`}>
+        {rateValue}
+      </div>
+      <div className="text-xs text-red-500 mt-2">{xp}</div>
+    </div>
+  );
+}
+
 export default function PredatorDashboard() {
   const [dashboardType, setDashboardType] = useState('sales');
   const [dateRange, setDateRange] = useState('7');
   const [data, setData] = useState<any[]>([]);
   const [marketingData, setMarketingData] = useState<any[]>([]);
+  const [personalData, setPersonalData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [level, setLevel] = useState(7);
   const [totalXP, setTotalXP] = useState(0);
@@ -76,7 +95,24 @@ export default function PredatorDashboard() {
   const [currentStreak, setCurrentStreak] = useState(0);
   const [projections, setProjections] = useState<any>(null);
   const [marketingProjections, setMarketingProjections] = useState<any>(null);
-  const progressToLevel25 = Math.min((totalXP / nextLevelXP) * 100, 100);
+
+  // Get XP based on dashboard type
+  const getCurrentXP = () => {
+    if (dashboardType === 'sales') {
+      return data.reduce((acc, curr) => acc + (Number(curr.totalXP) || 0), 0);
+    } else if (dashboardType === 'marketing') {
+      return marketingData.reduce((acc, curr) => acc + (Number(curr.marketingXP) || 0), 0);
+    } else {
+      return personalData.reduce((acc, curr) => acc + (Number(curr.personalXP) || 0), 0);
+    }
+  };
+
+  const calculateCurrentLevel = () => {
+    const currentXP = getCurrentXP();
+    return Math.floor(currentXP / 2000) + 1;
+  };
+
+  const progressToLevel25 = Math.min((getCurrentXP() / nextLevelXP) * 100, 100);
 
   const calculateStreak = (data: any[], projections: any) => {
     if (!data.length || !projections?.outbound?.daily) return 0;
@@ -159,31 +195,35 @@ export default function PredatorDashboard() {
     async function loadData() {
       try {
         setLoading(true);
-        const [sheetData, projectionsData, mktgData, mktgProjections] = await Promise.all([
+        const [sheetData, projectionsData, mktgData, mktgProjections, pData] = await Promise.all([
           fetchSheetData(),
           fetchProjections(),
           fetchMarketingData(),
-          fetchMarketingProjections()
+          fetchMarketingProjections(),
+          fetchPersonalData()
         ]);
         
         setProjections(projectionsData);
         setMarketingProjections(mktgProjections);
 
-        // ADD THESE TWO LINES:
+        console.log('Personal Data:', pData);
         console.log('Marketing Data:', mktgData);
-        console.log('Marketing Projections:', mktgProjections);
+        console.log('Sales Projections:', projectionsData);
         
         if (dateRange === 'ALL') {
           setData(sheetData);
           setMarketingData(mktgData);
+          setPersonalData(pData);
         } else {
           const today = new Date();
           const startDate = new Date();
           startDate.setDate(today.getDate() - parseInt(dateRange));
           const filteredData = filterDataByDateRange(sheetData, startDate.toISOString(), today.toISOString());
           const filteredMktgData = filterDataByDateRange(mktgData, startDate.toISOString(), today.toISOString());
+          const filteredPersonalData = filterDataByDateRange(pData, startDate.toISOString(), today.toISOString());
           setData(filteredData);
           setMarketingData(filteredMktgData);
+          setPersonalData(filteredPersonalData);
 
           const streak = calculateStreak(filteredData, projectionsData);
           setCurrentStreak(streak);
@@ -199,14 +239,8 @@ export default function PredatorDashboard() {
   }, [dateRange]);
 
   useEffect(() => {
-    if (dashboardType === 'sales' && data.length > 0) {
-      const sum = data.reduce((acc, curr) => acc + (Number(curr.totalXP) || 0), 0);
-      setTotalXP(sum);
-    } else if (dashboardType === 'marketing' && marketingData.length > 0) {
-      const sum = marketingData.reduce((acc, curr) => acc + (Number(curr.marketingXP) || 0), 0);
-      setTotalXP(sum);
-    }
-  }, [data, marketingData, dashboardType]);
+    setTotalXP(getCurrentXP());
+  }, [data, marketingData, personalData, dashboardType]);
 
   const metrics = calculateMetrics();
 
@@ -235,6 +269,7 @@ export default function PredatorDashboard() {
           >
             <option value="sales">Sales</option>
             <option value="marketing">Marketing</option>
+            <option value="personal">Personal</option>
           </select>
           <select 
             className="bg-gray-900 border border-red-500/30 rounded-md p-2 text-white"
@@ -254,12 +289,12 @@ export default function PredatorDashboard() {
         <div className="flex justify-between items-center mb-2">
           <div className="text-xl text-red-500">Progress to Level 25</div>
           <div className="flex items-center gap-2 text-white">
-            <span className="text-red-500 font-bold">Level {Math.floor(totalXP / 2000) + 1}</span>
+            <span className="text-red-500 font-bold">Level {calculateCurrentLevel()}</span>
             <span>|</span>
-            <span>{totalXP.toLocaleString()} / {nextLevelXP.toLocaleString()} XP</span>
+            <span>{getCurrentXP().toLocaleString()} / {nextLevelXP.toLocaleString()} XP</span>
           </div>
         </div>
-        <div className="w-full bg-gray-800 h-4 rounded-full mb-2">
+        <div className="w-full bg-gray-800 h-4 rounded-full">
           <div 
             className="bg-red-500 h-full rounded-full transition-all duration-500"
             style={{ width: `${progressToLevel25}%` }}
@@ -270,7 +305,7 @@ export default function PredatorDashboard() {
       {/* Dashboard Content */}
       {dashboardType === 'sales' ? (
         <>
-          {/* Charts Section */}
+          {/* Sales Charts Section */}
           <div className="grid grid-cols-2 gap-4 mb-6">
             {/* Line Chart */}
             <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4 h-[400px]">
@@ -296,81 +331,72 @@ export default function PredatorDashboard() {
             {/* Bar Chart */}
             <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4 h-[400px]">
               <TargetBarChart 
-                data={formatDataForBarChart(data)} 
-                projections={projections || {}} 
+                data={formatDataForBarChart(data)}projections={projections || {}} 
+                />
+              </div>
+            </div>
+  
+            {/* Sales Metrics Grid */}
+            <div className="grid grid-cols-5 gap-4 mb-6">
+              <MetricCard 
+                title="OUTBOUND"
+                value={metrics.totalOutbound.toLocaleString()}
+                rate="Conv. Rate"
+                rateValue={`${((metrics.totalTriage / metrics.totalOutbound * 100) || 0).toFixed(1)}%`}
+                xp="+1 XP each"
+                icon={Target}
+              />
+              <MetricCard 
+                title="TRIAGE"
+                value={metrics.totalTriage.toLocaleString()}
+                rate="Set Rate"
+                rateValue={`${((metrics.totalAppointments / metrics.totalTriage * 100) || 0).toFixed(1)}%`}
+                xp="+10 XP each"
+                icon={Swords}
+              />
+              <MetricCard 
+                title="APPOINTMENTS"
+                value={metrics.totalAppointments.toLocaleString()}
+                rate="Show Rate"
+                rateValue={`${((metrics.totalShows / metrics.totalAppointments * 100) || 0).toFixed(1)}%`}
+                xp="+25 XP each"
+                icon={Calendar}
+              />
+              <MetricCard 
+                title="CLOSES"
+                value={metrics.totalCloses.toLocaleString()}
+                rate="Close Rate"
+                rateValue={`${((metrics.totalCloses / metrics.totalShows * 100) || 0).toFixed(1)}%`}
+                xp="+100 XP each"
+                icon={Flame}
+              />
+              <MetricCard 
+                title="REVENUE"
+                value={`$${metrics.totalRevenue.toLocaleString()}`}
+                rate="Per Close"
+                rateValue={`$${Math.round(metrics.totalRevenue / metrics.totalCloses || 0).toLocaleString()}`}
+                xp="Level Bonus: 2x"
+                icon={DollarSign}
               />
             </div>
-          </div>
-
-          {/* Metrics Grid */}
-          <div className="grid grid-cols-5 gap-4 mb-6">
-            <MetricCard 
-              title="OUTBOUND"
-              value={metrics.totalOutbound.toLocaleString()}
-              rate="Conv. Rate"
-              rateValue={`${((metrics.totalTriage / metrics.totalOutbound * 100) || 0).toFixed(1)}%`}
-              xp="+1 XP each"
-              icon={Target}
-            />
-            <MetricCard 
-              title="TRIAGE"
-              value={metrics.totalTriage.toLocaleString()}
-              rate="Set Rate"
-              rateValue={`${((metrics.totalAppointments / metrics.totalTriage * 100) || 0).toFixed(1)}%`}
-              xp="+10 XP each"
-              icon={Swords}
-            />
-            <MetricCard 
-              title="APPOINTMENTS"
-              value={metrics.totalAppointments.toLocaleString()}
-              rate="Show Rate"
-              rateValue={`${((metrics.totalShows / metrics.totalAppointments * 100) || 0).toFixed(1)}%`}
-              xp="+25 XP each"
-              icon={Calendar}
-            />
-            <MetricCard 
-              title="CLOSES"
-              value={metrics.totalCloses.toLocaleString()}
-              rate="Close Rate"
-              rateValue={`${((metrics.totalCloses / metrics.totalShows * 100) || 0).toFixed(1)}%`}
-              xp="+100 XP each"
-              icon={Flame}
-            />
-            <MetricCard 
-              title="REVENUE"
-              value={`$${metrics.totalRevenue.toLocaleString()}`}
-              rate="Per Close"
-              rateValue={`$${Math.round(metrics.totalRevenue / metrics.totalCloses || 0).toLocaleString()}`}
-              xp="Level Bonus: 2x"
-              icon={DollarSign}
-            />
-          </div>
-        </>
-      ) : (
-        <MarketingDashboard 
-          marketingData={marketingData}
-          dateRange={dateRange}
-          onDateRangeChange={(range) => setDateRange(range)}
-          projections={marketingProjections}  // Add this line here
-        />
-      )}
-    </div>
-  );
-}
-
-function MetricCard({ title, value, rate, rateValue, xp, icon: Icon }: MetricCardProps) {
-  return (
-    <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4">
-      <div className="flex justify-between items-start mb-2">
-      <span className="text-gray-300">{title}</span>
-      {Icon && <Icon className="text-red-500" />}
+          </>
+        ) : dashboardType === 'marketing' ? (
+          <MarketingDashboard 
+            marketingData={marketingData}
+            dateRange={dateRange}
+            onDateRangeChange={(range) => setDateRange(range)}
+            projections={marketingProjections}
+          />
+        ) : (
+          <PersonalDashboard 
+            data={personalData}
+            dateRange={dateRange}
+            onDateRangeChange={(range) => setDateRange(range)}
+            salesData={data}
+            marketingData={marketingData}
+            projections={projections}
+          />
+        )}
       </div>
-      <div className="text-2xl font-bold mb-1 text-white">{value}</div>
-      <div className="text-sm text-gray-300">{rate}</div>
-      <div className={`text-lg font-bold ${getRateColor(title, parseFloat(String(rateValue)))}`}>
-        {rateValue}
-      </div>
-      <div className="text-xs text-red-500 mt-2">{xp}</div>
-    </div>
-  );
-}
+    );
+  }

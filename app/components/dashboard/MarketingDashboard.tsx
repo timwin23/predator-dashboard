@@ -116,7 +116,7 @@ export default function MarketingDashboard({
     const metrics = {
       ...totals,
       responseRate: (totals.totalResponses / totals.totalOutbound * 100) || 0,
-      vslViewRate: (totals.totalVSLViews / totals.totalResponses * 100) || 0,
+      vslViewRate: (totals.totalVSLViews / totals.totalOutbound * 100) || 0,
       trialRate: (totals.totalTrials / totals.totalVSLViews * 100) || 0,
       paidRate: (totals.totalPaid / totals.totalTrials * 100) || 0,
       leadsPerPost: (totals.totalLeads / totals.totalPosts) || 0

@@ -1,36 +1,92 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Dashboard System Documentation
 
-## Getting Started
+## Overview
+This system consists of interconnected dashboard components that handle different aspects of performance tracking: Predator (Sales), Marketing, and Personal achievements.
 
-First, run the development server:
+## Core Components
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+### Main Dashboard
+- `PredatorDashboard.tsx` - Primary dashboard component
+  - Parent component for Marketing and Personal dashboards
+  - Integrates with `sheets.ts` for data
+  - Features `TargetBarChart` component for sales metrics
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Specialized Dashboards
+1. **Marketing Dashboard**
+   - `MarketingDashboard.tsx`
+   - Data source: `marketingsheets.ts`
+   - Features `MarketingTargetBarChart` for marketing metrics
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+2. **Personal Dashboard**
+   - `PersonalDashboard.tsx`
+   - Data sources: 
+     - `achievements.ts` - Achievement system logic
+     - `personalAchievements.tsx` - Personal metrics display
+   - Displays achievement progress in bar chart format
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Data Structure
 
-## Learn More
+### Achievements System (`achievements.ts`)
+// Type definitions
+TierType: 'bronze' | 'silver' | 'gold' | 'none'
+CategoryType: 'sales' | 'marketing' | 'personal'
 
-To learn more about Next.js, take a look at the following resources:
+// Main interfaces
+Achievement: Base achievement structure
+Goal: Extended achievement with progress tracking
+AchievementsData: Complete achievement data structure
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Naming Conventions
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+1. **Files**
+   - Component files (.tsx): PascalCase
+     - Example: `PredatorDashboard.tsx`, `MarketingDashboard.tsx`
+   - Data/utility files (.ts): camelCase
+     - Example: `achievements.ts`, `marketingsheets.ts`
 
-## Deploy on Vercel
+2. **Components**
+   - React Components: PascalCase
+     - Example: `PredatorDashboard`, `TargetBarChart`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+3. **TypeScript Declarations**
+   - Interfaces: PascalCase
+     - Example: `Achievement`, `Goal`, `AchievementsData`
+   - Types: PascalCase
+     - Example: `TierType`, `CategoryType`
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. **Functions and Variables**
+   - Functions: camelCase
+     - Example: `fetchAchievements()`
+   - Variables: camelCase
+     - Example: `spreadsheetId`, `libraryResponse`
+
+## Data Flow
+graph TD
+    PD[PredatorDashboard] --> MD[MarketingDashboard]
+    PD --> PERD[PersonalDashboard]
+    sheets.ts --> PD
+    marketingsheets.ts --> MD
+    achievements.ts --> PERD
+    personalAchievements.tsx --> PERD
+
+## File Structure
+app/
+├── components/
+│   ├── dashboard/
+│   │   ├── PredatorDashboard.tsx
+│   │   ├── MarketingDashboard.tsx
+│   │   ├── PersonalDashboard.tsx
+│   │   ├── achievements.ts
+│   │   ├── personalAchievements.tsx
+│   │   ├── sheets.ts
+│   │   └── marketingsheets.ts
+│   └── charts/
+│       ├── TargetBarChart.tsx
+│       └── MarketingTargetBarChart.tsx
+
+## Contributing Guidelines
+1. Follow established naming conventions
+2. Maintain the hierarchical dashboard structure
+3. Keep data fetching logic separate from display components
+4. Use TypeScript interfaces for type safety
+5. Document any new components or significant changes

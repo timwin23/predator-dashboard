@@ -1,17 +1,38 @@
 // app/lib/sheets.ts
 
-// This function helps ensure that a value is safely converted to a number.
 function safeRate(value: any): number {
   const num = parseFloat(value);
   return isNaN(num) ? 0 : num;
 }
 
-// Fetches data from Google Sheets and returns it in a structured format
-export async function fetchSheetData() {
+interface SheetData {
+  date: string;
+  outbound: number;
+  triage: number;
+  triageRate: number;
+  appointments: number;
+  setRate: number;
+  shows: number;
+  showRate: number;
+  closes: number;
+  closeRate: number;
+  revenue: number;
+  revenuePerClose: number;
+  totalXP: number;
+}
+
+interface PersonalData {
+  date: string;
+  energy: number;
+  confidence: number;
+  personalXP: number;
+}
+
+export async function fetchSheetData(): Promise<SheetData[]> {
   try {
     const spreadsheetId = "1NdCBL0usG_V7LlZBMfB43E48T3_NB5itV5ZeOsGAhJE";
     const apiKey = "AIzaSyA8xFp3JzgFdgbSTdUjO7wMI32yz0NVKGQ";
-    const range = 'Sales Analysis!A2:N'; // Adjusted range
+    const range = 'Sales Analysis!A2:N';
     
     const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
     const response = await fetch(url);
@@ -24,7 +45,6 @@ export async function fetchSheetData() {
       return [];
     }
 
-    // Process the sheet data and return it in a structured format
     return data.values.map((row: any[]) => {
       if (!row || row.length < 13) {
         console.warn('Row has insufficient data:', row);
@@ -41,8 +61,7 @@ export async function fetchSheetData() {
           closeRate: 0,
           revenue: 0,
           revenuePerClose: 0,
-          energy: 0,
-          totalXP: 0 // Default to 0 for missing values
+          totalXP: 0
         };
       }
 
@@ -59,8 +78,7 @@ export async function fetchSheetData() {
         closeRate: safeRate(row[9]),
         revenue: Number(row[10]) || 0,
         revenuePerClose: Number(row[11]) || 0,
-        energy: Number(row[12]) || 0,
-        totalXP: row.length >= 13 ? Number(row[12]) : 0 // Adjust for column "M"
+        totalXP: row.length >= 13 ? Number(row[12]) : 0
       };
     });
   } catch (error) {
@@ -69,7 +87,38 @@ export async function fetchSheetData() {
   }
 }
 
-// Filters the data based on a date range
+export async function fetchPersonalData(): Promise<PersonalData[]> {
+  try {
+    const spreadsheetId = "1NdCBL0usG_V7LlZBMfB43E48T3_NB5itV5ZeOsGAhJE";
+    const apiKey = "AIzaSyA8xFp3JzgFdgbSTdUjO7wMI32yz0NVKGQ";
+    const range = 'Raw Data!A2:Y';
+    
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/${range}?key=${apiKey}&valueRenderOption=UNFORMATTED_VALUE&dateTimeRenderOption=FORMATTED_STRING`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    console.log('Raw personal data:', JSON.stringify(data, null, 2));
+
+    if (!data.values) {
+      console.error('No data values returned from Raw Data tab');
+      return [];
+    }
+
+    return data.values.map((row: any[]) => {
+      // We want columns B (1), P (15), Q (16), and Y (24) for date, energy, confidence, and personalXP
+      return {
+        date: row[1] || '',  // Date is in column B
+        energy: Number(row[15]) || 0,  // Energy is in column P
+        confidence: Number(row[16]) || 0,  // Confidence is in column Q
+        personalXP: Number(row[24]) || 0  // PersonalXP is in column Y
+      };
+    });
+  } catch (error) {
+    console.error('Error fetching personal data:', error);
+    return [];
+  }
+}
+
 export function filterDataByDateRange(data: any[], startDate: string, endDate: string) {
   const start = new Date(startDate);
   const end = new Date(endDate);
@@ -84,7 +133,6 @@ export function filterDataByDateRange(data: any[], startDate: string, endDate: s
   });
 }
 
-// Fetches projection data from Google Sheets and returns it in a structured format
 export async function fetchProjections() {
   try {
     const spreadsheetId = "1NdCBL0usG_V7LlZBMfB43E48T3_NB5itV5ZeOsGAhJE";
@@ -101,17 +149,18 @@ export async function fetchProjections() {
       return null;
     }
 
-    // Define the accumulator type within the reduce function
     const projections = data.values.reduce((acc: { [key: string]: Projection }, row: any[]) => {
       const metric = row[0].toLowerCase().replace(' ', '_');
+      console.log('Processing projection row:', row, 'metric:', metric);
       acc[metric] = {
         daily: Number(row[1]) || 0,
         weekly: Number(row[2]) || 0,
         monthly: Number(row[3]) || 0
       };
       return acc;
-    }, {}); // Initial value is an empty object
+    }, {});
 
+    console.log('Final projections:', projections);
     return projections;
 
   } catch (error) {
@@ -120,7 +169,6 @@ export async function fetchProjections() {
   }
 }
 
-// Projection type interface
 interface Projection {
   daily: number;
   weekly: number;

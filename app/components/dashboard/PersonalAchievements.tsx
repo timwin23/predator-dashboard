@@ -35,8 +35,7 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
   useEffect(() => {
     async function loadAchievements() {
       const data = await fetchAchievements();
-      console.log('Full achievements data:', data);
-      console.log('Active goals from data:', data?.activeGoals);
+      console.log("Fetched achievements data:", data); // Debug log
       setAchievements(data);
       setLoading(false);
     }
@@ -49,8 +48,8 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
 
   const { activeGoals, completedAchievements } = achievements;
   
-  // Group completed achievements by category
-  const groupedAchievements = completedAchievements.reduce((acc: { [key in CategoryType]: Goal[] }, achievement: Goal) => {
+  // Group completed achievements by category with proper typing
+  const groupedAchievements = completedAchievements.reduce<{ [key in CategoryType]: Goal[] }>((acc, achievement) => {
     if (!acc[achievement.category]) {
       acc[achievement.category] = [];
     }
@@ -58,19 +57,17 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
     return acc;
   }, { sales: [], marketing: [], personal: [] });
 
-  console.log('Rendering with activeGoals:', activeGoals);
-
   return (
     <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4 h-[400px] overflow-y-auto">
       {/* Active Goals Section */}
       {activeGoals && activeGoals.length > 0 && (
         <div className="mb-6">
           <h3 className="text-lg text-red-500 font-bold mb-2">Current Goals</h3>
-          {activeGoals.map((goal: Goal) => (
+          {activeGoals.map((goal) => (
             <div key={goal.id} className="bg-gray-800 rounded-lg p-4 border border-red-500/30 mb-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
-                  <span className={`text-sm ${TIER_COLORS[goal.tier as TierType]}`}>
+                  <span className={`text-sm ${TIER_COLORS[goal.tier]}`}>
                     {goal.category.toUpperCase()} • {goal.tier.toUpperCase()}
                   </span>
                   <div className="font-bold text-white">{goal.title}</div>
@@ -139,4 +136,3 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
 };
 
 export default PersonalAchievements;
-

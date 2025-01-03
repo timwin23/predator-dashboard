@@ -1,4 +1,4 @@
-// achievements.ts
+import { Achievement } from '@/types/models';
 
 // Types
 export type TierType = 'bronze' | 'silver' | 'gold' | 'none';
@@ -36,7 +36,6 @@ export async function fetchAchievements(): Promise<AchievementsData | null> {
     const spreadsheetId = "1NdCBL0usG_V7LlZBMfB43E48T3_NB5itV5ZeOsGAhJE";
     const apiKey = "AIzaSyA8xFp3JzgFdgbSTdUjO7wMI32yz0NVKGQ";
     
-    // Fetch both sheets with correct names
     const [libraryResponse, goalsResponse] = await Promise.all([
       fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Achievement%20Library!A2:I1000?key=${apiKey}`),
       fetch(`https://sheets.googleapis.com/v4/spreadsheets/${spreadsheetId}/values/Goals%20%26%20Achievements!A2:M1000?key=${apiKey}`)
@@ -45,9 +44,6 @@ export async function fetchAchievements(): Promise<AchievementsData | null> {
     const libraryData = await libraryResponse.json();
     const goalsData = await goalsResponse.json();
 
-    // Add these console.logs
-    console.log('Raw goals data:', goalsData.values);
-    
     // Parse achievement library
     const achievementLibrary = libraryData.values?.map((row: string[]) => ({
       id: row[0],
@@ -80,11 +76,10 @@ export async function fetchAchievements(): Promise<AchievementsData | null> {
 
     // Add these console.logs
     console.log('Parsed goals and achievements:', goalsAndAchievements);
-    console.log('Active goals:', goalsAndAchievements.filter(g => g.status === 'active'));
+    console.log('Active goals:', goalsAndAchievements.filter((g: Goal) => g.status === 'active'));
 
     const activeGoals = goalsAndAchievements.filter((g: Goal) => g.status === 'active');
     console.log('Found active goals:', activeGoals);
-    console.log('Active goals statuses:', goalsAndAchievements.map(g => g.status));
 
     return {
       library: achievementLibrary,

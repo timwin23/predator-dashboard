@@ -49,13 +49,18 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
   const { activeGoals, completedAchievements } = achievements;
   
   // Group completed achievements by category with proper typing
-  const groupedAchievements = completedAchievements.reduce<{ [key in CategoryType]: Goal[] }>((acc, achievement) => {
-    if (!acc[achievement.category]) {
-      acc[achievement.category] = [];
+  const groupedAchievements = completedAchievements.reduce<Record<CategoryType, Goal[]>>((acc, achievement: Goal) => {
+    const category = achievement.category as CategoryType;
+    if (!acc[category]) {
+      acc[category] = [];
     }
-    acc[achievement.category].push(achievement);
+    acc[category].push(achievement);
     return acc;
-  }, { sales: [], marketing: [], personal: [] });
+  }, {
+    sales: [],
+    marketing: [],
+    personal: []
+  });
 
   return (
     <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4 h-[400px] overflow-y-auto">

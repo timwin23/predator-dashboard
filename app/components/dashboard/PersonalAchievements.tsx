@@ -35,7 +35,8 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
   useEffect(() => {
     async function loadAchievements() {
       const data = await fetchAchievements();
-      console.log('Fetched achievements:', data);
+      console.log('Full achievements data:', data);
+      console.log('Active goals from data:', data?.activeGoals);
       setAchievements(data);
       setLoading(false);
     }
@@ -56,6 +57,8 @@ const PersonalAchievements = ({ salesData, marketingData, personalData }: Props)
     acc[achievement.category].push(achievement);
     return acc;
   }, { sales: [], marketing: [], personal: [] });
+
+  console.log('Rendering with activeGoals:', activeGoals);
 
   return (
     <div className="bg-gray-900 border border-red-500/20 rounded-lg p-4 h-[400px] overflow-y-auto">

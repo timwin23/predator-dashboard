@@ -45,6 +45,9 @@ export async function fetchAchievements(): Promise<AchievementsData | null> {
     const libraryData = await libraryResponse.json();
     const goalsData = await goalsResponse.json();
 
+    // Add these console.logs
+    console.log('Raw goals data:', goalsData.values);
+    
     // Parse achievement library
     const achievementLibrary = libraryData.values?.map((row: string[]) => ({
       id: row[0],
@@ -75,10 +78,18 @@ export async function fetchAchievements(): Promise<AchievementsData | null> {
       isSecret: row[12] === 'TRUE'
     })) || [];
 
+    // Add these console.logs
+    console.log('Parsed goals and achievements:', goalsAndAchievements);
+    console.log('Active goals:', goalsAndAchievements.filter(g => g.status === 'active'));
+
+    const activeGoals = goalsAndAchievements.filter((g: Goal) => g.status === 'active');
+    console.log('Found active goals:', activeGoals);
+    console.log('Active goals statuses:', goalsAndAchievements.map(g => g.status));
+
     return {
       library: achievementLibrary,
       goalsAndAchievements,
-      activeGoals: goalsAndAchievements.filter((g: Goal) => g.status === 'active'),
+      activeGoals,
       completedAchievements: goalsAndAchievements.filter((g: Goal) => g.status === 'completed')
     };
 

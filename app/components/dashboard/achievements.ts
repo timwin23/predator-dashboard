@@ -1,5 +1,3 @@
-import { Achievement } from '@/types/models';
-
 // Types
 export type TierType = 'bronze' | 'silver' | 'gold' | 'none';
 export type CategoryType = 'sales' | 'marketing' | 'personal';
